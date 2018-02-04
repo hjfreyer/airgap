@@ -7,12 +7,12 @@ import csv
 
 
 try:
-    from typing import List, Text
+    from typing import List, Text, TextIO
 except ImportError: pass
 
 def bytes2int(str):
     return int(binascii.hexlify(str), 16)
- 
+
 #from builtins import bytes, bytearray
 #from builtins import int, str
 
@@ -29,26 +29,27 @@ else:
 
 if hasattr(int, "to_bytes"):
     def int_to_bytes(integer, length):
-        return integer.to_bytes(length, byteorder='big')    
+        return integer.to_bytes(length, byteorder='big')
 else:
     def int_to_bytes(integer, length):
         hex_string = '%x' % integer
         return binascii.unhexlify(hex_string.zfill(length * 2))
 
 
-def seed_to_sk(seed_bytes, index):
-    # type: (bytes, int) -> int
+def seed_to_sk(seed, index):
+    # type: (Text, int) -> int
     """Given the contents of a seed file, generate a secret key as an int."""
-    phrase = b' '.join(seed_bytes.split())
+    phrase = b' '.join(word.encode('ascii') for word in seed.split())
     phrase += b' ' + str(index).encode('ascii') + b'\n'
-    
+    print(phrase)
+
     return int_from_bytes(hashlib.sha256(phrase).digest(), byteorder='big')
 
 
 def sk_to_pk(sk):
     # type: (int) -> bytes
     """Converts private keys to public keys.
-    
+
     The input is an integer as returned by seed_to_sk. The output is an
     uncompressed secp256k1 public key, as a byte string, as described in SEC 1
     v2.0 section 2.3.3.
@@ -84,7 +85,7 @@ def pk_to_addr(pk):
     #    from cryptography.hazmat import backends
     from pycoin import key
     pk_nums = ec.EllipticCurvePublicNumbers.from_encoded_point(ec.SECP256K1(), pk)
-    
+
     k = key.Key.from_sec(pk, netcode='BTC')
     # k = key.Key(public_pair=(pk_nums.x, pk_nums.y), netcode='BTC')
     return k.address(use_uncompressed=True)
@@ -134,7 +135,7 @@ class Deriver(object):
 
         return base58(d + h[:4])
 #        from pycoin import key
-#       
+#
 #        k = key.Key(sk)
 #        return k.wif(use_uncompressed=True)
 
@@ -148,11 +149,15 @@ def cli():
 @click.option('--start', default=0, help='First index for which to generate a WIF')
 @click.option('--count', default=10, help='Number of WIFs to generate, starting from --start')
 def wif(seed_in, wif_out, start, count):
+    # type(TextIO, TextIO, int, int) -> None
     """Generates WIFs from a file with seed words."""
-    with csv.writer(wif_out, delimeter='\t') as tsv_out:
-        for idx in range():
-            pass
-    
+    seed = seed_in.read()
+    tsv_out = csv.writer(wif_out, delimiter='\t')
+    for idx in range(start, start+count):
+        print(hex(seed_to_sk(seed, idx)))
+        wif = sk_to_wif(seed_to_sk(seed, idx))
+        tsv_out.writerow([idx, wif])
+
 
 if __name__ == '__main__':
     cli()

@@ -24,12 +24,12 @@ def makeTestCases():
             for seed in case['seeds']:
                 for addr in case['addrs']:
                     index = addr['index']
-                    yield param('%s_%d' % (seed, index), seed.encode('ascii'), index, addr)
+                    yield param('%s_%d' % (seed, index), seed, index, addr)
 
 class TestStringMethods(unittest.TestCase):
     @parameterized.expand(makeTestCases)
     def test_all(self, _, seed, index, addr):
-        # type: (Text, bytes, int, Dict) -> None
+        # type: (Text, Text, int, Dict) -> None
         sk = airgap.seed_to_sk(seed, index)
         self.assertEqual(int(addr['sk'], 16), sk)
 
@@ -41,8 +41,7 @@ class TestStringMethods(unittest.TestCase):
 
         a = airgap.pk_to_addr(pk)
         self.assertEqual(addr['address'], a)
-    
+
 
 if __name__ == '__main__':
     unittest.main()
-        

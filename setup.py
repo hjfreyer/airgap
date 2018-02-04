@@ -1,4 +1,6 @@
 from distutils.core import setup
 
-setup(name='TowelStuff',
-      install_requires=['future', 'cryptography', 'pycoin'])
+setup(name='airgap',
+      install_requires=['future', 'cryptography', 'pycoin', 'click',
+                        'pytest', 'typing', 'parameterized', 'hypothesis',
+                        'tox'])
