@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
-import click
-import hashlib
 import binascii
 import csv
+import hashlib
 
+import click
 
 try:
     from typing import List, Text, TextIO
 except ImportError: pass
 
 def bytes2int(str):
+    # type: (bytes) -> int
     return int(binascii.hexlify(str), 16)
 
 #from builtins import bytes, bytearray
@@ -139,24 +140,47 @@ class Deriver(object):
 #        k = key.Key(sk)
 #        return k.wif(use_uncompressed=True)
 
+
+def new_writer(outfile):
+  return csv.writer(outfile, delimiter='\t', lineterminator='\n')
+
+
 @click.group()
 def cli():
     pass
 
 @cli.command()
 @click.argument('seed_in', type=click.File('r'))
-@click.argument('wif_out', type=click.File('w'))
+@click.argument('wif_out', type=click.File('wb'))
 @click.option('--start', default=0, help='First index for which to generate a WIF')
 @click.option('--count', default=10, help='Number of WIFs to generate, starting from --start')
 def wif(seed_in, wif_out, start, count):
-    # type(TextIO, TextIO, int, int) -> None
+    # type: (TextIO, TextIO, int, int) -> None
     """Generates WIFs from a file with seed words."""
     seed = seed_in.read()
-    tsv_out = csv.writer(wif_out, delimiter='\t')
+    tsv_out = new_writer(wif_out)
     for idx in range(start, start+count):
-        print(hex(seed_to_sk(seed, idx)))
         wif = sk_to_wif(seed_to_sk(seed, idx))
-        tsv_out.writerow([idx, wif])
+        w2 = wif.encode('ascii')
+        print(type(w2))
+        tsv_out.writerow([idx, w2])
+
+
+@cli.command()
+@click.argument('seed_in', type=click.File('r'))
+@click.argument('pubkey_out', type=click.File('wb'))
+@click.option('--start', default=0,
+              help='First index for which to generate a public key')
+@click.option('--count', default=10,
+              help='Number of public keys to generate, starting from --start')
+def pubkey(seed_in, pubkey_out, start, count):
+    # type: (TextIO, TextIO, int, int) -> None
+    """Generates SEC1-format public keys from a file with seed words."""
+    seed = seed_in.read()
+    tsv_out = new_writer(pubkey_out)
+    for idx in range(start, start+count):
+        pubkey = sk_to_pk(seed_to_sk(seed, idx))
+        tsv_out.writerow([idx, binascii.hexlify(pubkey)])
 
 
 if __name__ == '__main__':

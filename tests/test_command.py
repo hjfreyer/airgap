@@ -61,7 +61,6 @@ class TestStringMethods(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
-
     def call_it(self, args):
         subprocess.check_call([sys.executable, SCRIPT_FILE] + args)
 
@@ -72,12 +71,26 @@ class TestStringMethods(unittest.TestCase):
         self.call_it(['wif', seed_path, actual_wif_path,
                       '--start', str(params['start']),
                       '--count', str(params['count'])])
-        with open(wif_path) as f:
+        with open(wif_path, 'r') as f:
             expected_wif = f.read()
-        with open(actual_wif_path) as f:
+        with open(actual_wif_path, 'r') as f:
             actual_wif = f.read()
 
         self.assertEqual(expected_wif, actual_wif)
+
+    @parameterized.expand(makePubkeyOutTestCases)
+    def test_pubkeys(self, seed_path, pubkey_path, params):
+        # type: (Text, Text, Dict) -> None
+        actual_pubkey_path = os.path.join(self.tmp_dir, 'wif.out.tsv')
+        self.call_it(['pubkey', seed_path, actual_pubkey_path,
+                      '--start', str(params['start']),
+                      '--count', str(params['count'])])
+        with open(pubkey_path) as f:
+            expected_pubkey = f.read()
+        with open(actual_pubkey_path) as f:
+            actual_pubkey = f.read()
+
+        self.assertEqual(expected_pubkey, actual_pubkey)
 
 if __name__ == '__main__':
     unittest.main()

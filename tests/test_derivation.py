@@ -1,21 +1,15 @@
+import binascii
+import json
+import os.path
+import unittest
+
+from typing import List, Dict, Any, Text
+from parameterized import parameterized, param
 
 from .context import airgap
 
-
-from typing import List, Dict, Any, Text
-import unittest
-from hypothesis import given, assume
-import hypothesis
-import os.path
-import hypothesis.strategies as st
-from parameterized import parameterized, param
-import json
-
-
-import binascii
-#from builtins import bytes
-
 TESTDATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+
 
 def makeTestCases():
     with open(os.path.join(TESTDATA_DIR, 'vector.json')) as f:
@@ -25,6 +19,7 @@ def makeTestCases():
                 for addr in case['addrs']:
                     index = addr['index']
                     yield param('%s_%d' % (seed, index), seed, index, addr)
+
 
 class TestStringMethods(unittest.TestCase):
     @parameterized.expand(makeTestCases)
