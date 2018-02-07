@@ -36,6 +36,23 @@ else:
         hex_string = '%x' % integer
         return binascii.unhexlify(hex_string.zfill(length * 2))
 
+if hasattr(bytes, "hex"):
+    def bytes_to_hex(b):
+        # type: (bytes) -> Text
+        return b.hex()
+else:
+    def bytes_to_hex(b):
+        # type: (bytes) -> Text
+        return binascii.hexlify(b).decode('ascii')
+
+if hasattr(bytes, "fromhex"):
+    def bytes_from_hex(h):
+        # type: (Text) -> bytes
+        return bytes.fromhex(h)
+else:
+    def bytes_from_hex(h):
+        # type: (Text) -> bytes
+        return binascii.unhexlify(h)
 
 def seed_to_sk(seed, index):
     # type: (Text, int) -> int
@@ -145,13 +162,17 @@ def new_writer(outfile):
   return csv.writer(outfile, delimiter='\t', lineterminator='\n')
 
 
+def new_reader(infile):
+  return csv.reader(infile, delimiter='\t')
+
+
 @click.group()
 def cli():
     pass
 
 @cli.command()
 @click.argument('seed_in', type=click.File('r'))
-@click.argument('wif_out', type=click.File('wb'))
+@click.argument('wif_out', type=click.File('w'))
 @click.option('--start', default=0, help='First index for which to generate a WIF')
 @click.option('--count', default=10, help='Number of WIFs to generate, starting from --start')
 def wif(seed_in, wif_out, start, count):
@@ -161,14 +182,12 @@ def wif(seed_in, wif_out, start, count):
     tsv_out = new_writer(wif_out)
     for idx in range(start, start+count):
         wif = sk_to_wif(seed_to_sk(seed, idx))
-        w2 = wif.encode('ascii')
-        print(type(w2))
-        tsv_out.writerow([idx, w2])
+        tsv_out.writerow([idx, wif])
 
 
 @cli.command()
 @click.argument('seed_in', type=click.File('r'))
-@click.argument('pubkey_out', type=click.File('wb'))
+@click.argument('pubkey_out', type=click.File('w'))
 @click.option('--start', default=0,
               help='First index for which to generate a public key')
 @click.option('--count', default=10,
@@ -180,7 +199,18 @@ def pubkey(seed_in, pubkey_out, start, count):
     tsv_out = new_writer(pubkey_out)
     for idx in range(start, start+count):
         pubkey = sk_to_pk(seed_to_sk(seed, idx))
-        tsv_out.writerow([idx, binascii.hexlify(pubkey)])
+        tsv_out.writerow([idx, bytes_to_hex(pubkey)])
+
+@cli.command()
+@click.argument('pubkey_in', type=click.File('r'))
+@click.argument('addr_out', type=click.File('w'))
+def addr(pubkey_in, addr_out):
+    # type: (TextIO, TextIO) -> None
+    """Generates SEC1-format public keys from a file with seed words."""
+    tsv_out = new_writer(addr_out)
+    for idx, pubkey_hex in new_reader(pubkey_in):
+      pubkey = bytes_from_hex(pubkey_hex)
+      tsv_out.writerow([idx, pk_to_addr(pubkey)])
 
 
 if __name__ == '__main__':
